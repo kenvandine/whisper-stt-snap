@@ -110,9 +110,9 @@ curl -X POST http://localhost:9000/transcribe \
 
 Quick test with JFK audio sample:
 ```bash
-curl -O https://upload.wikimedia.org/wikipedia/commons/e/e2/John_F._Kennedy_-_inaugural_address.ogg
+curl -LO "https://archive.org/download/JFKIsolatedAudioFile/JFK%20Isolated%20Audio%20File.mp3"
 curl -X POST http://localhost:9000/transcribe \
-  -F "audio=@John_F._Kennedy_-_inaugural_address.ogg"
+  -F "audio=@JFK Isolated Audio File.mp3"
 ```
 
 Response:

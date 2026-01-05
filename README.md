@@ -108,6 +108,13 @@ curl -X POST http://localhost:9000/transcribe \
   -F "task=translate"
 ```
 
+Quick test with JFK audio sample:
+```bash
+curl -O https://upload.wikimedia.org/wikipedia/commons/e/e2/John_F._Kennedy_-_inaugural_address.ogg
+curl -X POST http://localhost:9000/transcribe \
+  -F "audio=@John_F._Kennedy_-_inaugural_address.ogg"
+```
+
 Response:
 ```json
 {

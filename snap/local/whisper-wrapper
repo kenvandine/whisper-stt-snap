@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -e
+
+# Read configuration from snapctl
+PORT=$(snapctl get port)
+MODEL=$(snapctl get model)
+
+# Set defaults if not configured
+PORT=${PORT:-9000}
+MODEL=${MODEL:-base}
+
+# Export as environment variables for the Python script
+export WHISPER_PORT="$PORT"
+export WHISPER_MODEL="$MODEL"
+
+# Set the model cache directory to snap common data
+export XDG_CACHE_HOME="$SNAP_COMMON/.cache"
+
+exec "$SNAP/bin/python3" "$SNAP/bin/whisper-server.py"

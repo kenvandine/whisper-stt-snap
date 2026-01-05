@@ -1,0 +1,86 @@
+name: whisper-stt
+adopt-info: whisper
+summary: Whisper speech-to-text service
+description: |
+  A daemon that provides speech-to-text transcription using OpenAI's Whisper model.
+  Supports GPU acceleration with NVIDIA CUDA for faster inference.
+
+  Configure the service with:
+    snap set whisper-stt port=9000
+    snap set whisper-stt model=base
+
+  Available models: tiny, base, small, medium, large
+
+  For GPU support, connect the GPU interface:
+    snap connect whisper-stt:gpu-2404 mesa-2404:gpu-2404
+
+base: core24
+confinement: strict
+grade: stable
+
+platforms:
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
+
+plugs:
+  gpu-2404:
+    interface: content
+    target: $SNAP/gpu-2404
+    default-provider: mesa-2404
+
+layout:
+  /usr/share/libdrm:
+    bind: $SNAP/gpu-2404/libdrm
+  /usr/share/drirc.d:
+    symlink: $SNAP/gpu-2404/drirc.d
+
+apps:
+  whisper-stt:
+    command: bin/whisper-wrapper
+    daemon: simple
+    restart-condition: on-failure
+    environment:
+      LD_LIBRARY_PATH: /var/lib/snapd/lib/gl:$SNAP/gpu-2404/lib:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/blas:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/lapack:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/pulseaudio
+      LIBVA_DRIVERS_PATH: $SNAP/gpu-2404/lib/dri
+      __EGL_VENDOR_LIBRARY_DIRS: $SNAP/gpu-2404/share/glvnd/egl_vendor.d
+    plugs:
+      - network
+      - network-bind
+      - opengl
+      - gpu-2404
+
+parts:
+  whisper:
+    plugin: python
+    source: .
+    python-packages:
+      - openai-whisper
+      - flask
+    stage-packages:
+      - ffmpeg
+    build-packages:
+      - build-essential
+      - python3-dev
+      - ffmpeg
+    override-build: |
+      craftctl default
+      # Install PyTorch nightly with CUDA 12.8 support (for Blackwell sm_120)
+      ${CRAFT_PART_INSTALL}/bin/pip install --force-reinstall --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+      # Fix numpy version conflict with numba
+      ${CRAFT_PART_INSTALL}/bin/pip install "numpy<2.4"
+      VERSION=$(${CRAFT_PART_INSTALL}/bin/python3 -c "import whisper; print(whisper.__version__)")
+      craftctl set version="$VERSION"
+
+  wrapper:
+    plugin: dump
+    source: snap/local
+    organize:
+      whisper-wrapper: bin/whisper-wrapper
+      whisper-server.py: bin/whisper-server.py
+
+  hooks:
+    plugin: dump
+    source: snap/hooks
+    organize:
+      configure: snap/hooks/configure

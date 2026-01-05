@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -e
+
+# Get the port setting, default to 9000
+port="$(snapctl get port)"
+if [ -z "$port" ]; then
+    port="9000"
+    snapctl set port="$port"
+fi
+
+# Validate port is a number between 1 and 65535
+if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+    echo "Invalid port: $port. Must be a number between 1 and 65535." >&2
+    exit 1
+fi
+
+# Get the model setting, default to base
+model="$(snapctl get model)"
+if [ -z "$model" ]; then
+    model="base"
+    snapctl set model="$model"
+fi
+
+# Validate model is one of the supported models
+case "$model" in
+    tiny|tiny.en|base|base.en|small|small.en|medium|medium.en|large|large-v1|large-v2|large-v3)
+        ;;
+    *)
+        echo "Invalid model: $model. Supported models: tiny, base, small, medium, large" >&2
+        exit 1
+        ;;
+esac
+
+# Restart the service to apply changes
+snapctl restart whisper-stt.whisper-stt 2>/dev/null || true
